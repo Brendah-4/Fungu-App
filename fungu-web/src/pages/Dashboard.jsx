@@ -79,6 +79,12 @@ const Dashboard = () => {
         <h1 className="text-xl font-bold">FunguApp</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm">Hello, {user?.name}</span>
+          <button
+            onClick={() => navigate('/owner')}
+            className="text-sm bg-green-800 px-3 py-1 rounded-lg hover:bg-green-900 transition"
+          >
+            Owner Dashboard
+          </button>
           <button onClick={handleLogout} className="flex items-center gap-1 text-sm hover:text-green-200">
             <LogOut size={16} /> Logout
           </button>
