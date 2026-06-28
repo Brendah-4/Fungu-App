@@ -30,7 +30,10 @@ const joinChama = async (req, res) => {
   try {
     const { inviteCode } = req.body;
 
-    const chama = await Chama.findOne({ inviteCode });
+    const chama = await Chama.findOne({
+      inviteCode: inviteCode.toString().trim().toUpperCase()
+    });
+
     if (!chama) {
       return res.status(404).json({ message: 'Invalid invite code' });
     }
