@@ -21,6 +21,7 @@ app.use('/api/chamas', require('./routes/chamaRoutes'));
 app.use('/api/contributions', require('./routes/contributionRoutes'));
 app.use('/api/loans', require('./routes/loanRoutes'));
 app.use('/api/owner', require('./routes/ownerRoutes'));
+app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

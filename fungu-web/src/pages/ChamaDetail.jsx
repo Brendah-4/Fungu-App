@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Users, Wallet, PlusCircle, HandCoins } from 'lucide-react';
+import { ArrowLeft, Users, Wallet, PlusCircle, HandCoins, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const ChamaDetail = () => {
@@ -12,12 +12,15 @@ const ChamaDetail = () => {
   const [chama, setChama] = useState(null);
   const [contributions, setContributions] = useState([]);
   const [loans, setLoans] = useState([]);
+  const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('ledger');
   const [showContribute, setShowContribute] = useState(false);
   const [showLoan, setShowLoan] = useState(false);
+  const [showPaySub, setShowPaySub] = useState(false);
   const [contributeForm, setContributeForm] = useState({ amount: '', mpesaRef: '', notes: '' });
   const [loanForm, setLoanForm] = useState({ amount: '', reason: '' });
+  const [subMpesaRef, setSubMpesaRef] = useState('');
 
   useEffect(() => {
     fetchAll();
@@ -25,14 +28,16 @@ const ChamaDetail = () => {
 
   const fetchAll = async () => {
     try {
-      const [chamaRes, contribRes, loanRes] = await Promise.all([
+      const [chamaRes, contribRes, loanRes, subRes] = await Promise.all([
         api.get(`/chamas/${id}`),
         api.get(`/contributions/${id}`),
-        api.get(`/loans/${id}`)
+        api.get(`/loans/${id}`),
+        api.get(`/subscriptions/status/${id}`)
       ]);
       setChama(chamaRes.data);
       setContributions(contribRes.data);
       setLoans(loanRes.data);
+      setSubscription(subRes.data);
     } catch (error) {
       toast.error('Failed to load chama details');
     } finally {
@@ -85,8 +90,28 @@ const ChamaDetail = () => {
     }
   };
 
+  const handlePaySubscription = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/subscriptions/activate', {
+        chamaId: id,
+        mpesaRef: subMpesaRef
+      });
+      toast.success('Subscription activated successfully!');
+      setShowPaySub(false);
+      setSubMpesaRef('');
+      fetchAll();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to activate subscription');
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!chama) return <div className="min-h-screen flex items-center justify-center">Chama not found</div>;
+
+  const isChairperson = chama.members?.find(
+    m => m.user?._id === user?._id && m.role === 'chairperson'
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -99,6 +124,35 @@ const ChamaDetail = () => {
           <p className="text-xs text-green-200">{chama.description}</p>
         </div>
       </nav>
+
+      {subscription && (
+        <div className={`px-6 py-3 flex items-center justify-between text-sm ${
+          subscription.isActive ? 'bg-green-50 border-b border-green-100' : 'bg-red-50 border-b border-red-100'
+        }`}>
+          <div className="flex items-center gap-2">
+            {subscription.isActive
+              ? <CheckCircle size={16} className="text-green-600" />
+              : <AlertCircle size={16} className="text-red-600" />
+            }
+            <span className={subscription.isActive ? 'text-green-700' : 'text-red-700'}>
+              {subscription.plan === 'trial'
+                ? `Free trial — ${subscription.daysLeft} days left`
+                : subscription.isActive
+                  ? `Basic plan — ${subscription.daysLeft} days left`
+                  : 'Subscription expired — renew to continue'
+              }
+            </span>
+          </div>
+          {isChairperson && (
+            <button
+              onClick={() => setShowPaySub(true)}
+              className="bg-green-600 text-white px-3 py-1 rounded-lg text-xs hover:bg-green-700"
+            >
+              {subscription.isActive ? 'Renew — KES 300/mo' : 'Pay Now — KES 300'}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto p-6">
         <div className="grid grid-cols-3 gap-4 mb-6">
@@ -319,6 +373,31 @@ const ChamaDetail = () => {
               <div className="flex gap-3 mt-4">
                 <button type="button" onClick={() => setShowLoan(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Submit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showPaySub && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-2">Activate Subscription</h3>
+            <p className="text-gray-500 text-sm mb-4">
+              Send KES 300 to M-Pesa till number <span className="font-bold text-green-700">XXXXXXX</span> then enter the confirmation code below.
+            </p>
+            <form onSubmit={handlePaySubscription} className="space-y-3">
+              <input
+                type="text"
+                placeholder="M-Pesa confirmation code e.g. RGH7Y8K9J"
+                value={subMpesaRef}
+                onChange={e => setSubMpesaRef(e.target.value)}
+                required
+                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
+              <div className="flex gap-3 mt-4">
+                <button type="button" onClick={() => setShowPaySub(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Activate — KES 300/mo</button>
               </div>
             </form>
           </div>
