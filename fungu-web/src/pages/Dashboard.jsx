@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { Users, PlusCircle, LogOut, Wallet } from 'lucide-react';
+import { Users, PlusCircle, LogOut, Wallet, Bell } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -12,6 +12,9 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [inviteCode, setInviteCode] = useState('');
   const [form, setForm] = useState({
     name: '',
@@ -23,6 +26,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchChamas();
+    fetchUnreadCount();
   }, []);
 
   const fetchChamas = async () => {
@@ -34,6 +38,31 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const { data } = await api.get('/notifications/unread');
+      setUnreadCount(data.count);
+    } catch (error) {
+      console.error('Failed to fetch unread count');
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      const { data } = await api.get('/notifications');
+      setNotifications(data);
+    } catch (error) {
+      toast.error('Failed to load notifications');
+    }
+  };
+
+  const handleOpenNotifications = async () => {
+    await fetchNotifications();
+    setShowNotifications(true);
+    await api.put('/notifications/read/all');
+    setUnreadCount(0);
   };
 
   const handleCreate = async (e) => {
@@ -84,6 +113,17 @@ const Dashboard = () => {
             className="text-sm bg-green-800 px-3 py-1 rounded-lg hover:bg-green-900 transition"
           >
             Owner Dashboard
+          </button>
+          <button
+            onClick={handleOpenNotifications}
+            className="relative hover:text-green-200"
+          >
+            <Bell size={20} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </button>
           <button onClick={handleLogout} className="flex items-center gap-1 text-sm hover:text-green-200">
             <LogOut size={16} /> Logout
@@ -142,6 +182,33 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {showNotifications && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-end p-4 z-50">
+          <div className="bg-white rounded-2xl w-full max-w-md mt-16 shadow-xl">
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold">Notifications</h3>
+              <button onClick={() => setShowNotifications(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+            </div>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Bell size={32} className="mx-auto mb-3" />
+                  <p>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map(n => (
+                  <div key={n._id} className={`p-4 border-b ${n.isRead ? 'bg-white' : 'bg-green-50'}`}>
+                    <p className="font-medium text-gray-800 text-sm">{n.title}</p>
+                    <p className="text-gray-500 text-xs mt-1">{n.message}</p>
+                    <p className="text-gray-300 text-xs mt-2">{new Date(n.createdAt).toLocaleDateString()}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

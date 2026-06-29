@@ -23,6 +23,7 @@ app.use('/api/loans', require('./routes/loanRoutes'));
 app.use('/api/owner', require('./routes/ownerRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

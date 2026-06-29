@@ -2,6 +2,7 @@ const Loan = require('../models/Loan');
 const Chama = require('../models/Chama');
 const User = require('../models/User');
 const { sendLoanApprovalSMS } = require('../utils/sms');
+const { createNotification, notifyAllMembers } = require('../utils/notify');
 
 const requestLoan = async (req, res) => {
   try {
@@ -40,6 +41,18 @@ const requestLoan = async (req, res) => {
       platformFee,
       dueDate
     });
+
+    const memberIds = chama.members
+      .filter(m => m.user.toString() !== req.user._id.toString())
+      .map(m => m.user);
+
+    await notifyAllMembers(
+      memberIds,
+      'loan_request',
+      'New Loan Request',
+      `${req.user.name} has requested a loan of KES ${amount.toLocaleString()} from ${chama.name}. Please vote to approve or reject.`,
+      chamaId
+    );
 
     res.status(201).json(loan);
   } catch (error) {
@@ -82,9 +95,23 @@ const voteLoan = async (req, res) => {
       const borrower = await User.findById(loan.member);
       if (borrower) {
         sendLoanApprovalSMS(borrower.phone, borrower.name, loan.amount, chama.name);
+        await createNotification(
+          loan.member,
+          'loan_approved',
+          'Loan Approved!',
+          `Your loan request of KES ${loan.amount.toLocaleString()} from ${chama.name} has been approved.`,
+          chama._id
+        );
       }
     } else if (rejections > totalMembers / 2) {
       loan.status = 'rejected';
+      await createNotification(
+        loan.member,
+        'loan_rejected',
+        'Loan Rejected',
+        `Your loan request of KES ${loan.amount.toLocaleString()} from ${chama.name} was rejected by the group.`,
+        chama._id
+      );
     }
 
     await loan.save();

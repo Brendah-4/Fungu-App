@@ -2,6 +2,7 @@ const Contribution = require('../models/Contribution');
 const Chama = require('../models/Chama');
 const User = require('../models/User');
 const { sendContributionReminder } = require('../utils/sms');
+const { notifyAllMembers } = require('../utils/notify');
 
 const makeContribution = async (req, res) => {
   try {
@@ -36,6 +37,15 @@ const makeContribution = async (req, res) => {
 
     chama.balance += amount;
     await chama.save();
+
+    const memberIds = chama.members.map(m => m.user);
+    await notifyAllMembers(
+      memberIds,
+      'contribution',
+      'New Contribution',
+      `${req.user.name} contributed KES ${amount.toLocaleString()} to ${chama.name}`,
+      chamaId
+    );
 
     res.status(201).json(contribution);
   } catch (error) {
@@ -131,11 +141,15 @@ const sendReminders = async (req, res) => {
     dueDate.setDate(dueDate.getDate() + 3);
     const dueDateStr = dueDate.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' });
 
-    await sendContributionReminder(
-      members,
-      chama.name,
-      chama.rules.contributionAmount,
-      dueDateStr
+    await sendContributionReminder(members, chama.name, chama.rules.contributionAmount, dueDateStr);
+
+    const memberIds = chama.members.map(m => m.user._id);
+    await notifyAllMembers(
+      memberIds,
+      'reminder',
+      'Contribution Reminder',
+      `Your contribution of KES ${chama.rules.contributionAmount.toLocaleString()} for ${chama.name} is due on ${dueDateStr}`,
+      chamaId
     );
 
     res.json({ message: `Reminders sent to ${members.length} members` });
