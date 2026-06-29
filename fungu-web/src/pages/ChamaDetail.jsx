@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Wallet, PlusCircle, HandCoins, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, PlusCircle, HandCoins, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const ChamaDetail = () => {
@@ -115,6 +115,11 @@ const ChamaDetail = () => {
     }
   };
 
+  const handleDownloadStatement = () => {
+    const token = localStorage.getItem('token');
+    window.open(`http://localhost:5000/api/reports/statement/${id}?token=${token}`, '_blank');
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!chama) return <div className="min-h-screen flex items-center justify-center">Chama not found</div>;
 
@@ -200,6 +205,12 @@ const ChamaDetail = () => {
               Send Reminders
             </button>
           )}
+          <button
+            onClick={handleDownloadStatement}
+            className="flex items-center gap-2 bg-white border border-gray-400 text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-50 transition"
+          >
+            <Download size={18} /> Download Statement
+          </button>
         </div>
 
         <div className="flex gap-2 mb-4">
