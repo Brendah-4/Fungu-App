@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Users, Wallet, PlusCircle, HandCoins, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Wallet, PlusCircle, HandCoins, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const ChamaDetail = () => {
@@ -106,6 +106,15 @@ const ChamaDetail = () => {
     }
   };
 
+  const handleSendReminders = async () => {
+    try {
+      const { data } = await api.post(`/contributions/remind/${id}`);
+      toast.success(data.message);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to send reminders');
+    }
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   if (!chama) return <div className="min-h-screen flex items-center justify-center">Chama not found</div>;
 
@@ -170,7 +179,7 @@ const ChamaDetail = () => {
           </div>
         </div>
 
-        <div className="flex gap-3 mb-6">
+        <div className="flex gap-3 mb-6 flex-wrap">
           <button
             onClick={() => setShowContribute(true)}
             className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
@@ -183,6 +192,14 @@ const ChamaDetail = () => {
           >
             <HandCoins size={18} /> Request Loan
           </button>
+          {isChairperson && (
+            <button
+              onClick={handleSendReminders}
+              className="flex items-center gap-2 bg-white border border-blue-500 text-blue-500 px-4 py-2 rounded-lg hover:bg-blue-50 transition"
+            >
+              Send Reminders
+            </button>
+          )}
         </div>
 
         <div className="flex gap-2 mb-4">

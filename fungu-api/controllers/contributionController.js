@@ -1,5 +1,7 @@
 const Contribution = require('../models/Contribution');
 const Chama = require('../models/Chama');
+const User = require('../models/User');
+const { sendContributionReminder } = require('../utils/sms');
 
 const makeContribution = async (req, res) => {
   try {
@@ -108,9 +110,44 @@ const getMemberSummary = async (req, res) => {
   }
 };
 
+const sendReminders = async (req, res) => {
+  try {
+    const { chamaId } = req.params;
+
+    const chama = await Chama.findById(chamaId).populate('members.user', 'name phone');
+    if (!chama) {
+      return res.status(404).json({ message: 'Chama not found' });
+    }
+
+    const isChairperson = chama.members.find(
+      m => m.user._id.toString() === req.user._id.toString() && m.role === 'chairperson'
+    );
+    if (!isChairperson) {
+      return res.status(403).json({ message: 'Only chairperson can send reminders' });
+    }
+
+    const members = chama.members.map(m => m.user);
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 3);
+    const dueDateStr = dueDate.toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    await sendContributionReminder(
+      members,
+      chama.name,
+      chama.rules.contributionAmount,
+      dueDateStr
+    );
+
+    res.json({ message: `Reminders sent to ${members.length} members` });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   makeContribution,
   getChamaContributions,
   getMyContributions,
-  getMemberSummary
+  getMemberSummary,
+  sendReminders
 };

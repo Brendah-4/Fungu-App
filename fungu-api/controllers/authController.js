@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { sendWelcomeSMS } = require('../utils/sms');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -24,6 +25,8 @@ const register = async (req, res) => {
       phone,
       password: hashedPassword
     });
+
+    sendWelcomeSMS(phone, name);
 
     res.status(201).json({
       _id: user._id,

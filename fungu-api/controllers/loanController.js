@@ -1,5 +1,7 @@
 const Loan = require('../models/Loan');
 const Chama = require('../models/Chama');
+const User = require('../models/User');
+const { sendLoanApprovalSMS } = require('../utils/sms');
 
 const requestLoan = async (req, res) => {
   try {
@@ -77,6 +79,10 @@ const voteLoan = async (req, res) => {
 
     if (approvals > totalMembers / 2) {
       loan.status = 'approved';
+      const borrower = await User.findById(loan.member);
+      if (borrower) {
+        sendLoanApprovalSMS(borrower.phone, borrower.name, loan.amount, chama.name);
+      }
     } else if (rejections > totalMembers / 2) {
       loan.status = 'rejected';
     }
