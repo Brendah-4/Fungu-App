@@ -9,6 +9,14 @@ const createChama = async (req, res) => {
   try {
     const { name, description, rules } = req.body;
 
+    if (!name || name.trim().length < 3) {
+      return res.status(400).json({ message: 'Chama name must be at least 3 characters' });
+    }
+
+    if (!rules?.contributionAmount || rules.contributionAmount <= 0) {
+      return res.status(400).json({ message: 'Contribution amount must be greater than 0' });
+    }
+
     const inviteCode = generateInviteCode();
 
     const chama = await Chama.create({
@@ -29,6 +37,10 @@ const createChama = async (req, res) => {
 const joinChama = async (req, res) => {
   try {
     const { inviteCode } = req.body;
+
+    if (!inviteCode || inviteCode.trim().length === 0) {
+      return res.status(400).json({ message: 'Please enter an invite code' });
+    }
 
     const chama = await Chama.findOne({
       inviteCode: inviteCode.toString().trim().toUpperCase()
@@ -106,10 +118,22 @@ const updateChama = async (req, res) => {
 
     const { name, description, rules } = req.body;
 
-    if (name) chama.name = name;
+    if (name !== undefined) {
+      if (name.trim().length < 3) {
+        return res.status(400).json({ message: 'Chama name must be at least 3 characters' });
+      }
+      chama.name = name;
+    }
+
     if (description !== undefined) chama.description = description;
+
     if (rules) {
-      chama.rules.contributionAmount = rules.contributionAmount ?? chama.rules.contributionAmount;
+      if (rules.contributionAmount !== undefined) {
+        if (rules.contributionAmount <= 0) {
+          return res.status(400).json({ message: 'Contribution amount must be greater than 0' });
+        }
+        chama.rules.contributionAmount = rules.contributionAmount;
+      }
       chama.rules.contributionFrequency = rules.contributionFrequency ?? chama.rules.contributionFrequency;
       chama.rules.penaltyAmount = rules.penaltyAmount ?? chama.rules.penaltyAmount;
     }
@@ -154,6 +178,11 @@ const changeMemberRole = async (req, res) => {
   try {
     const { chamaId, memberId } = req.params;
     const { role } = req.body;
+
+    const validRoles = ['member', 'treasurer', 'secretary', 'chairperson'];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
 
     const chama = await Chama.findById(chamaId);
     if (!chama) {

@@ -8,6 +8,14 @@ const makeContribution = async (req, res) => {
   try {
     const { chamaId, amount, mpesaRef, notes } = req.body;
 
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Amount must be greater than 0' });
+    }
+
+    if (amount > 1000000) {
+      return res.status(400).json({ message: 'Amount exceeds maximum allowed' });
+    }
+
     const chama = await Chama.findById(chamaId);
     if (!chama) {
       return res.status(404).json({ message: 'Chama not found' });

@@ -24,6 +24,7 @@ app.use('/api/owner', require('./routes/ownerRoutes'));
 app.use('/api/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/mpesa', require('./routes/mpesaRoutes'));
 
 const PORT = process.env.PORT || 5000;
 

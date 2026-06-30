@@ -117,7 +117,8 @@ const ChamaDetail = () => {
 
   const handleDownloadStatement = () => {
     const token = localStorage.getItem('token');
-    window.open(`http://localhost:5000/api/reports/statement/${id}?token=${token}`, '_blank');
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    window.open(`${API_URL}/reports/statement/${id}?token=${token}`, '_blank');
   };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;

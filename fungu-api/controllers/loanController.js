@@ -8,6 +8,14 @@ const requestLoan = async (req, res) => {
   try {
     const { chamaId, amount, reason } = req.body;
 
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Loan amount must be greater than 0' });
+    }
+
+    if (!reason || reason.trim().length < 5) {
+      return res.status(400).json({ message: 'Please provide a valid reason for the loan' });
+    }
+
     const chama = await Chama.findById(chamaId);
     if (!chama) {
       return res.status(404).json({ message: 'Chama not found' });
@@ -22,6 +30,10 @@ const requestLoan = async (req, res) => {
 
     if (amount > chama.balance) {
       return res.status(400).json({ message: 'Amount exceeds chama balance' });
+    }
+
+    if (chama.members.length < 2) {
+      return res.status(400).json({ message: 'Loans require at least 2 members in the chama for voting' });
     }
 
     const interestRate = 5;
@@ -158,6 +170,10 @@ const repayLoan = async (req, res) => {
 
     if (loan.member.toString() !== req.user._id.toString()) {
       return res.status(403).json({ message: 'Not your loan' });
+    }
+
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Repayment amount must be greater than 0' });
     }
 
     loan.amountRepaid += amount;
