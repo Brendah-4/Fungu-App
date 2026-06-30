@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
-import { Users, PlusCircle, LogOut, Wallet, Bell } from 'lucide-react';
+import { Users, PlusCircle, LogOut, Wallet, Bell, User, LayoutDashboard } from 'lucide-react';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -104,18 +104,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">FunguApp</h1>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/profile')} className="text-sm hover:text-green-200">
-            Hello, {user?.name}
-          </button>
-          <button
-            onClick={() => navigate('/owner')}
-            className="text-sm bg-green-800 px-3 py-1 rounded-lg hover:bg-green-900 transition"
-          >
-            Owner Dashboard
-          </button>
+      <nav className="bg-green-700 text-white px-4 py-3 flex justify-between items-center">
+        <h1 className="text-lg font-bold">FunguApp</h1>
+        <div className="flex items-center gap-3">
           <button
             onClick={handleOpenNotifications}
             className="relative hover:text-green-200"
@@ -127,27 +118,40 @@ const Dashboard = () => {
               </span>
             )}
           </button>
-          <button onClick={handleLogout} className="flex items-center gap-1 text-sm hover:text-green-200">
-            <LogOut size={16} /> Logout
+          <button onClick={() => navigate('/profile')} className="hover:text-green-200">
+            <User size={20} />
+          </button>
+          <button
+            onClick={() => navigate('/owner')}
+            className="hover:text-green-200"
+            title="Owner Dashboard"
+          >
+            <LayoutDashboard size={20} />
+          </button>
+          <button onClick={handleLogout} className="hover:text-green-200">
+            <LogOut size={20} />
           </button>
         </div>
       </nav>
+      <div className="bg-green-50 px-4 py-2 text-sm text-green-800 border-b border-green-100">
+        Hello, {user?.name}
+      </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-4">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">My Chamas</h2>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             <button
               onClick={() => setShowJoin(true)}
-              className="flex items-center gap-2 bg-white border border-green-600 text-green-600 px-4 py-2 rounded-lg hover:bg-green-50 transition"
+              className="flex items-center gap-1 bg-white border border-green-600 text-green-600 px-3 py-2 rounded-lg hover:bg-green-50 transition text-sm"
             >
-              <Users size={18} /> Join Chama
+              <Users size={16} /> Join
             </button>
             <button
               onClick={() => setShowCreate(true)}
-              className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition"
+              className="flex items-center gap-1 bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 transition text-sm"
             >
-              <PlusCircle size={18} /> Create Chama
+              <PlusCircle size={16} /> Create
             </button>
           </div>
         </div>
