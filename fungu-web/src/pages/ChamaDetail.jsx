@@ -129,14 +129,24 @@ const ChamaDetail = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <nav className="bg-green-700 text-white px-6 py-4 flex items-center gap-4">
-        <button onClick={() => navigate('/dashboard')} className="hover:text-green-200">
-          <ArrowLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-xl font-bold">{chama.name}</h1>
-          <p className="text-xs text-green-200">{chama.description}</p>
+      <nav className="bg-green-700 text-white px-6 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/dashboard')} className="hover:text-green-200">
+            <ArrowLeft size={20} />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold">{chama.name}</h1>
+            <p className="text-xs text-green-200">{chama.description}</p>
+          </div>
         </div>
+        {isChairperson && (
+          <button
+            onClick={() => navigate(`/chama/${id}/settings`)}
+            className="text-sm bg-green-800 px-3 py-1 rounded-lg hover:bg-green-900 transition"
+          >
+            Settings
+          </button>
+        )}
       </nav>
 
       {subscription && (

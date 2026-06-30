@@ -104,11 +104,89 @@ const updateChama = async (req, res) => {
       return res.status(403).json({ message: 'Only chairperson can update chama' });
     }
 
-    const updated = await Chama.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    const { name, description, rules } = req.body;
+
+    if (name) chama.name = name;
+    if (description !== undefined) chama.description = description;
+    if (rules) {
+      chama.rules.contributionAmount = rules.contributionAmount ?? chama.rules.contributionAmount;
+      chama.rules.contributionFrequency = rules.contributionFrequency ?? chama.rules.contributionFrequency;
+      chama.rules.penaltyAmount = rules.penaltyAmount ?? chama.rules.penaltyAmount;
+    }
+
+    await chama.save();
+    res.json(chama);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { createChama, joinChama, getMyChamas, getChamaById, updateChama };
+const removeMember = async (req, res) => {
+  try {
+    const { chamaId, memberId } = req.params;
+
+    const chama = await Chama.findById(chamaId);
+    if (!chama) {
+      return res.status(404).json({ message: 'Chama not found' });
+    }
+
+    const isChairperson = chama.members.find(
+      m => m.user.toString() === req.user._id.toString() && m.role === 'chairperson'
+    );
+    if (!isChairperson) {
+      return res.status(403).json({ message: 'Only chairperson can remove members' });
+    }
+
+    if (memberId === req.user._id.toString()) {
+      return res.status(400).json({ message: 'Chairperson cannot remove themselves' });
+    }
+
+    chama.members = chama.members.filter(m => m.user.toString() !== memberId);
+    await chama.save();
+
+    res.json({ message: 'Member removed successfully', chama });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const changeMemberRole = async (req, res) => {
+  try {
+    const { chamaId, memberId } = req.params;
+    const { role } = req.body;
+
+    const chama = await Chama.findById(chamaId);
+    if (!chama) {
+      return res.status(404).json({ message: 'Chama not found' });
+    }
+
+    const isChairperson = chama.members.find(
+      m => m.user.toString() === req.user._id.toString() && m.role === 'chairperson'
+    );
+    if (!isChairperson) {
+      return res.status(403).json({ message: 'Only chairperson can change roles' });
+    }
+
+    const member = chama.members.find(m => m.user.toString() === memberId);
+    if (!member) {
+      return res.status(404).json({ message: 'Member not found' });
+    }
+
+    member.role = role;
+    await chama.save();
+
+    res.json({ message: 'Role updated successfully', chama });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  createChama,
+  joinChama,
+  getMyChamas,
+  getChamaById,
+  updateChama,
+  removeMember,
+  changeMemberRole
+};

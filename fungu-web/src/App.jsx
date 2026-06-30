@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import ChamaDetail from './pages/ChamaDetail';
 import OwnerDashboard from './pages/OwnerDashboard';
 import Profile from './pages/Profile';
+import ChamaSettings from './pages/ChamaSettings';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -32,6 +33,11 @@ const App = () => {
           <Route path="/chama/:id" element={
             <ProtectedRoute>
               <ChamaDetail />
+            </ProtectedRoute>
+          } />
+          <Route path="/chama/:id/settings" element={
+            <ProtectedRoute>
+              <ChamaSettings />
             </ProtectedRoute>
           } />
           <Route path="/owner" element={
