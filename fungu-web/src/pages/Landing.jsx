@@ -58,7 +58,6 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center sticky top-0 z-50">
         <h1 className="text-2xl font-bold text-green-700">FunguApp</h1>
         <div className="flex gap-3">
@@ -77,7 +76,6 @@ const Landing = () => {
         </div>
       </nav>
 
-      {/* Hero */}
       <section className="bg-gradient-to-br from-green-700 to-green-900 text-white py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-6">
@@ -104,7 +102,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Stats */}
       <section className="bg-green-50 py-12 px-6">
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
           <div>
@@ -126,7 +123,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Features */}
       <section className="py-20 px-6">
         <div className="max-w-5xl mx-auto">
           <h3 className="text-3xl font-bold text-center text-gray-800 mb-4">Everything Your Chama Needs</h3>
@@ -143,7 +139,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Pricing */}
       <section className="bg-gray-50 py-20 px-6">
         <div className="max-w-3xl mx-auto">
           <h3 className="text-3xl font-bold text-center text-gray-800 mb-4">Simple, Affordable Pricing</h3>
@@ -180,7 +175,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="bg-green-700 text-white py-16 px-6 text-center">
         <h3 className="text-3xl font-bold mb-4">Ready to Transform Your Chama?</h3>
         <p className="text-green-100 mb-8 max-w-xl mx-auto">Join hundreds of Kenyan savings groups managing their money with full transparency on FunguApp.</p>
@@ -192,10 +186,14 @@ const Landing = () => {
         </button>
       </section>
 
-      {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-8 px-6 text-center">
         <p className="text-white font-bold text-lg mb-2">FunguApp</p>
         <p className="text-sm">Transparent Chama Management for Kenya</p>
+        <div className="flex justify-center gap-6 mt-4 text-xs">
+          <button onClick={() => navigate('/terms')} className="hover:text-white transition">Terms of Service</button>
+          <button onClick={() => navigate('/terms')} className="hover:text-white transition">Privacy Policy</button>
+          <a href="mailto:support@funguapp.co.ke" className="hover:text-white transition">Contact Us</a>
+        </div>
         <p className="text-xs mt-4">© 2026 FunguApp. Built with ❤️ in Nairobi.</p>
       </footer>
     </div>
