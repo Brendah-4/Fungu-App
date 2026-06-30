@@ -107,7 +107,9 @@ const Dashboard = () => {
       <nav className="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">FunguApp</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm">Hello, {user?.name}</span>
+          <button onClick={() => navigate('/profile')} className="text-sm hover:text-green-200">
+            Hello, {user?.name}
+          </button>
           <button
             onClick={() => navigate('/owner')}
             className="text-sm bg-green-800 px-3 py-1 rounded-lg hover:bg-green-900 transition"
