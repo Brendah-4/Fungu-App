@@ -1,7 +1,9 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { sendWelcomeSMS } = require('../utils/sms');
+const { sendPasswordResetEmail } = require('../utils/email');
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
@@ -10,6 +12,19 @@ const generateToken = (id) => {
 const register = async (req, res) => {
   try {
     const { name, email, phone, password } = req.body;
+
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ message: 'Please provide a valid name' });
+    }
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({ message: 'Please provide a valid email' });
+    }
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ message: 'Please provide a valid phone number' });
+    }
+    if (!password || password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
 
     const userExists = await User.findOne({ email });
     if (userExists) {
@@ -43,6 +58,10 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' });
+    }
 
     const user = await User.findOne({ email });
     if (!user) {
@@ -79,6 +98,13 @@ const updateProfile = async (req, res) => {
   try {
     const { name, phone } = req.body;
 
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ message: 'Please provide a valid name' });
+    }
+    if (!phone || phone.length < 10) {
+      return res.status(400).json({ message: 'Please provide a valid phone number' });
+    }
+
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { name, phone },
@@ -94,6 +120,10 @@ const updateProfile = async (req, res) => {
 const updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'New password must be at least 6 characters' });
+    }
 
     const user = await User.findById(req.user._id);
 
@@ -121,4 +151,70 @@ const deleteAccount = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getProfile, updateProfile, updatePassword, deleteAccount };
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Please provide your email address' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(200).json({ message: 'If this email exists, a reset link has been sent' });
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000);
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpiry;
+    await user.save();
+
+    await sendPasswordResetEmail(user.email, user.name, resetToken);
+
+    res.json({ message: 'If this email exists, a reset link has been sent' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Reset link is invalid or has expired' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({ message: 'Password reset successfully. You can now login.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = {
+  register,
+  login,
+  getProfile,
+  updateProfile,
+  updatePassword,
+  deleteAccount,
+  forgotPassword,
+  resetPassword
+};
