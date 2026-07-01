@@ -18,9 +18,12 @@ const ChamaDetail = () => {
   const [showContribute, setShowContribute] = useState(false);
   const [showLoan, setShowLoan] = useState(false);
   const [showPaySub, setShowPaySub] = useState(false);
+  const [contributeMode, setContributeMode] = useState('manual');
   const [contributeForm, setContributeForm] = useState({ amount: '', mpesaRef: '', notes: '' });
+  const [mpesaForm, setMpesaForm] = useState({ amount: '', phone: user?.phone || '' });
   const [loanForm, setLoanForm] = useState({ amount: '', reason: '' });
   const [subMpesaRef, setSubMpesaRef] = useState('');
+  const [paymentPending, setPaymentPending] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -60,6 +63,49 @@ const ChamaDetail = () => {
       fetchAll();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to record contribution');
+    }
+  };
+
+  const handleMpesaContribute = async (e) => {
+    e.preventDefault();
+    setPaymentPending(true);
+    try {
+      const { data } = await api.post('/mpesa/contribute', {
+        chamaId: id,
+        phone: mpesaForm.phone,
+        amount: Number(mpesaForm.amount)
+      });
+      toast.success('STK Push sent! Check your phone to complete payment.');
+      setShowContribute(false);
+      setMpesaForm({ amount: '', phone: user?.phone || '' });
+
+      const pollStatus = setInterval(async () => {
+        try {
+          const statusRes = await api.get(`/mpesa/status/${data.contributionId}`);
+          if (statusRes.data.status === 'confirmed') {
+            clearInterval(pollStatus);
+            setPaymentPending(false);
+            toast.success('Payment confirmed!');
+            fetchAll();
+          } else if (statusRes.data.status === 'failed') {
+            clearInterval(pollStatus);
+            setPaymentPending(false);
+            toast.error('Payment failed. Please try again.');
+          }
+        } catch (err) {
+          clearInterval(pollStatus);
+          setPaymentPending(false);
+        }
+      }, 5000);
+
+      setTimeout(() => {
+        clearInterval(pollStatus);
+        setPaymentPending(false);
+      }, 60000);
+
+    } catch (error) {
+      setPaymentPending(false);
+      toast.error(error.response?.data?.message || 'Failed to initiate payment');
     }
   };
 
@@ -179,6 +225,13 @@ const ChamaDetail = () => {
         </div>
       )}
 
+      {paymentPending && (
+        <div className="bg-yellow-50 border-b border-yellow-100 px-6 py-3 text-sm text-yellow-700 flex items-center gap-2">
+          <div className="animate-spin w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full"></div>
+          Waiting for M-Pesa payment confirmation...
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto p-6">
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl p-4 shadow text-center">
@@ -266,7 +319,11 @@ const ChamaDetail = () => {
                       <td className="px-4 py-3 text-gray-500">{c.mpesaRef || '-'}</td>
                       <td className="px-4 py-3 text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</td>
                       <td className="px-4 py-3">
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">{c.status}</span>
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          c.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                          c.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>{c.status}</span>
                       </td>
                     </tr>
                   ))}
@@ -356,34 +413,79 @@ const ChamaDetail = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Record Contribution</h3>
-            <form onSubmit={handleContribute} className="space-y-3">
-              <input
-                type="number"
-                placeholder="Amount (KES)"
-                value={contributeForm.amount}
-                onChange={e => setContributeForm({ ...contributeForm, amount: e.target.value })}
-                required
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <input
-                type="text"
-                placeholder="M-Pesa reference (optional)"
-                value={contributeForm.mpesaRef}
-                onChange={e => setContributeForm({ ...contributeForm, mpesaRef: e.target.value })}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <input
-                type="text"
-                placeholder="Notes (optional)"
-                value={contributeForm.notes}
-                onChange={e => setContributeForm({ ...contributeForm, notes: e.target.value })}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-              />
-              <div className="flex gap-3 mt-4">
-                <button type="button" onClick={() => setShowContribute(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Cancel</button>
-                <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Submit</button>
-              </div>
-            </form>
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setContributeMode('manual')}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                  contributeMode === 'manual' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Manual Entry
+              </button>
+              <button
+                onClick={() => setContributeMode('mpesa')}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${
+                  contributeMode === 'mpesa' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                Pay via M-Pesa
+              </button>
+            </div>
+
+            {contributeMode === 'manual' ? (
+              <form onSubmit={handleContribute} className="space-y-3">
+                <input
+                  type="number"
+                  placeholder="Amount (KES)"
+                  value={contributeForm.amount}
+                  onChange={e => setContributeForm({ ...contributeForm, amount: e.target.value })}
+                  required
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <input
+                  type="text"
+                  placeholder="M-Pesa reference (optional)"
+                  value={contributeForm.mpesaRef}
+                  onChange={e => setContributeForm({ ...contributeForm, mpesaRef: e.target.value })}
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Notes (optional)"
+                  value={contributeForm.notes}
+                  onChange={e => setContributeForm({ ...contributeForm, notes: e.target.value })}
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <div className="flex gap-3 mt-4">
+                  <button type="button" onClick={() => setShowContribute(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Cancel</button>
+                  <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Submit</button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleMpesaContribute} className="space-y-3">
+                <input
+                  type="number"
+                  placeholder="Amount (KES)"
+                  value={mpesaForm.amount}
+                  onChange={e => setMpesaForm({ ...mpesaForm, amount: e.target.value })}
+                  required
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone number e.g. 0712345678"
+                  value={mpesaForm.phone}
+                  onChange={e => setMpesaForm({ ...mpesaForm, phone: e.target.value })}
+                  required
+                  className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-400">You will receive an M-Pesa prompt on your phone to complete the payment.</p>
+                <div className="flex gap-3 mt-4">
+                  <button type="button" onClick={() => setShowContribute(false)} className="flex-1 border border-gray-300 py-2 rounded-lg hover:bg-gray-50">Cancel</button>
+                  <button type="submit" className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Pay Now</button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
